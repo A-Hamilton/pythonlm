@@ -47,7 +47,6 @@ def load_checkpoint(model: PythonCoderModel) -> int:
     model_state = nnx.state(model)
     abstract_state = {
         'model': jax.tree.map(ocp.utils.to_shape_dtype_struct, model_state),
-        'optimizer': jax.tree.map(ocp.utils.to_shape_dtype_struct, model_state),
         'epoch': 0,
         'loss': 0.0,
     }
