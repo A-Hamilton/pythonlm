@@ -54,6 +54,7 @@ max_position_embeddings = 8192
 
 - **Multi-Epoch**: 4 epochs with dropout (0.1) for degradation protection
 - **Checkpointing**: Every epoch for offline HumanEval evaluation
+- **Evaluation**: Use `eval_humaneval.py` to score each epoch on HumanEval (pass@1/ pass@k)
 - **Data**: 24B tokens preprocessed in Parquet format
 
 ## References
