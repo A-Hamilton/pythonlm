@@ -73,7 +73,7 @@ class TrainingConfig:
     grad_clip: float = 1.0
 
     # Data
-    max_seq_len: int = 2048  # Start with 2048, can increase
+    max_seq_len: int = 1024  # Start with 1024, can increase
 
     # Training - Multi-Epoch Strategy
     steps_per_epoch: int = 5000  # ~2.4% of 1 data epoch
@@ -131,7 +131,7 @@ def compute_training_config(num_params: int, total_tokens: int, target_epochs: i
     Returns:
         dict with training configuration
     """
-    seq_len = CONFIG.max_seq_len  # 2048
+    seq_len = CONFIG.max_seq_len  # 1024
     batch_size = CONFIG.effective_batch_size  # 64
     tokens_per_step = seq_len * batch_size  # 131,072
 
