@@ -57,6 +57,21 @@ max_position_embeddings = 8192
 - **Evaluation**: Use `eval_humaneval.py` to score each epoch on HumanEval (pass@1/ pass@k)
 - **Data**: 24B tokens preprocessed in Parquet format
 
+## HumanEval Evaluation
+
+Run after each epoch to track pass@1 (and optional pass@k) for checkpoints in
+`checkpoints_v2`:
+
+```bash
+python eval/run_humaneval.py --checkpoint epoch_1 --output eval/humaneval_results.json
+```
+
+To log additional pass@k values or write CSV:
+
+```bash
+python eval/run_humaneval.py --checkpoint 2 --pass-k 1,10 --output eval/humaneval_results.csv
+```
+
 ## References
 
 - [Differential Transformer (ICLR 2025)](https://arxiv.org/abs/2410.05258)
