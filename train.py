@@ -462,6 +462,10 @@ def main():
         target_epochs=TARGET_EPOCHS
     )
 
+    CONFIG.learning_rate = auto_config['learning_rate']
+    CONFIG.warmup_steps = auto_config['warmup_steps']
+    CONFIG.stable_ratio = auto_config['stable_ratio']
+
     print("\n" + "─" * 60)
     print("AUTOMATED SCALING CONFIG (Benchmark-Justified)")
     print("─" * 60)
