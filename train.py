@@ -319,19 +319,32 @@ def create_optimizer(model: PythonCoderModel, total_steps: int) -> nnx.Optimizer
 
 
 # =============================================================================
-# Training Step
+# Training Step (Fixed: Proper Gradient Accumulation + Dropout)
 # =============================================================================
 
 @nnx.jit
-def train_step(model: PythonCoderModel, optimizer: nnx.Optimizer, batch: dict):
-    """Single training step."""
+def compute_grads(model: PythonCoderModel, batch: dict):
+    """Compute gradients for a single micro-batch (no optimizer update).
+
+    Bug fixes:
+    1. Dropout: Pass deterministic=False to enable dropout during training
+       Source: https://flax.readthedocs.io/en/latest/nnx_basics.html
+    2. Gradient accumulation: Only compute grads, don't update optimizer
+       Source: https://optax.readthedocs.io/en/latest/_collections/examples/gradient_accumulation.html
+    """
     def loss_fn(model):
-        output = model(batch['input_ids'], labels=batch['labels'])
+        # CRITICAL: deterministic=False enables dropout during training
+        output = model(batch['input_ids'], labels=batch['labels'], deterministic=False)
         return output['loss']
 
     loss, grads = nnx.value_and_grad(loss_fn)(model)
+    return loss, grads
+
+
+@nnx.jit
+def apply_grads(model: PythonCoderModel, optimizer: nnx.Optimizer, grads: dict):
+    """Apply accumulated gradients to model."""
     optimizer.update(model, grads)
-    return loss
 
 
 # =============================================================================
@@ -503,8 +516,10 @@ def main():
 
         for step in range(1, CONFIG.steps_per_epoch + 1):
             accumulated_loss = 0.0
+            accumulated_grads = None
 
-            for _ in range(CONFIG.gradient_accumulation_steps):
+            # Accumulate gradients over micro-batches (FIX: don't update optimizer per micro-batch)
+            for micro_step in range(CONFIG.gradient_accumulation_steps):
                 try:
                     batch = next(data_iter)
                 except StopIteration:
@@ -516,8 +531,22 @@ def main():
                     'labels': jnp.array(batch['labels'])[:, :CONFIG.max_seq_len],
                 }
 
-                loss = train_step(model, optimizer, batch)
+                # Compute gradients without updating (FIX)
+                loss, grads = compute_grads(model, batch)
                 accumulated_loss += float(loss)
+
+                # Accumulate gradients
+                if accumulated_grads is None:
+                    accumulated_grads = grads
+                else:
+                    accumulated_grads = jax.tree.map(
+                        lambda a, g: a + g, accumulated_grads, grads
+                    )
+
+            # Average gradients and apply once (FIX: was applying 8x per step before)
+            scale = 1.0 / CONFIG.gradient_accumulation_steps
+            averaged_grads = jax.tree.map(lambda g: g * scale, accumulated_grads)
+            apply_grads(model, optimizer, averaged_grads)
 
             loss = accumulated_loss / CONFIG.gradient_accumulation_steps
             epoch_losses.append(loss)
