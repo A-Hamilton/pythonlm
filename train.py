@@ -73,7 +73,7 @@ class TrainingConfig:
     grad_clip: float = 1.0
 
     # Data
-    max_seq_len: int = 2048  # Start with 2048, can increase
+    max_seq_len: int = 1024  # Match packed dataset length (1024)
 
     # Training - Multi-Epoch Strategy
     steps_per_epoch: int = 5000  # ~2.4% of 1 data epoch
@@ -461,6 +461,10 @@ def main():
         total_tokens=TOTAL_TOKENS,
         target_epochs=TARGET_EPOCHS
     )
+
+    CONFIG.learning_rate = auto_config['learning_rate']
+    CONFIG.warmup_steps = auto_config['warmup_steps']
+    CONFIG.stable_ratio = auto_config['stable_ratio']
 
     print("\n" + "─" * 60)
     print("AUTOMATED SCALING CONFIG (Benchmark-Justified)")

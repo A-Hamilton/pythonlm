@@ -893,13 +893,17 @@ class PythonCoderModel(nnx.Module):
         temperature: float = 0.7,
         top_p: float = 0.9,
         top_k: int = 50,
+        rng: Optional[Array] = None,
     ) -> Array:
         """Generate tokens autoregressively."""
         B, L = input_ids.shape
         generated = input_ids
         kv_cache = [None] * self.config.num_layers
+        if rng is None:
+            rng = jax.random.PRNGKey(0)
 
         for _ in range(max_new_tokens):
+            rng, step_rng = jax.random.split(rng)
             # Get logits for last token only
             if kv_cache[0] is not None:
                 curr_input = generated[:, -1:]
@@ -931,7 +935,7 @@ class PythonCoderModel(nnx.Module):
             # Sample
             probs = jax.nn.softmax(logits, axis=-1)
             next_token = jax.random.categorical(
-                jax.random.PRNGKey(int(jax.random.uniform(jax.random.PRNGKey(0)) * 1e6)),
+                step_rng,
                 jnp.log(probs + 1e-10)
             )
 
