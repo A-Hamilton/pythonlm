@@ -6,7 +6,7 @@ Removed MoE routing, Mamba layers, and other complexity.
 Target: Train 1.1B model on TPU v6e-1 with:
 - Differential Attention + GQA (65% parameter efficiency)
 - Multi-Token Prediction (MTP=1, +12-17% HumanEval)
-- YaRN (4x context extension, train at 2K, infer at 8K)
+- YaRN (4x context extension, train at 1K, infer at 8K)
 - WSD Scheduler (90% stable phase, flexible training)
 
 Automated Scaling:
@@ -453,8 +453,8 @@ def main():
     print(f"Parameters: {params:,} ({params/1e9:.2f}B)")
 
     # Compute automated training config
-    # Data: ~24B tokens (45GB parquet, 2390 shards)
-    TOTAL_TOKENS = 24_000_000_000  # 24B tokens
+    # Data: ~24.5B tokens (43.65GB parquet, 2390 shards)
+    TOTAL_TOKENS = 24_500_000_000  # 24.5B tokens
     TARGET_EPOCHS = 4  # Research: 4 epochs safe, beyond needs dropout
     auto_config = compute_training_config(
         num_params=params,
